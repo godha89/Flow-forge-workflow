@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowForge — Generic Workflow Engine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+–bg: #080c14;
+–surface: #0d1420;
+–surface2: #111a2b;
+–border: #1e2d45;
+–accent: #00e5ff;
+–accent2: #7c3aed;
+–accent3: #10b981;
+–accent4: #f59e0b;
+–accent5: #ef4444;
+–text: #e2eaf5;
+–text-muted: #5a7290;
+–text-dim: #8fa3bc;
+–glow: rgba(0,229,255,0.15);
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘Inter’, sans-serif;
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* Animated grid background */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+background-size: 40px 40px;
+pointer-events: none;
+z-index: 0;
+}
+
+.container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 32px; }
+
+/* HEADER */
+header {
+padding: 48px 0 24px;
+border-bottom: 1px solid var(–border);
+margin-bottom: 48px;
+}
+
+.logo-row {
+display: flex;
+align-items: center;
+gap: 16px;
+margin-bottom: 8px;
+}
+
+.logo-icon {
+width: 40px; height: 40px;
+background: linear-gradient(135deg, var(–accent), var(–accent2));
+border-radius: 8px;
+display: flex; align-items: center; justify-content: center;
+font-size: 20px;
+box-shadow: 0 0 24px rgba(0,229,255,0.3);
+}
+
+h1 {
+font-family: ‘Syne’, sans-serif;
+font-size: 32px;
+font-weight: 800;
+letter-spacing: -0.5px;
+background: linear-gradient(90deg, #fff 0%, var(–accent) 100%);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+
+.tagline {
+font-size: 14px;
+color: var(–text-muted);
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.5px;
+}
+
+/* TABS */
+.tabs {
+display: flex;
+gap: 4px;
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 4px;
+margin-bottom: 40px;
+width: fit-content;
+}
+
+.tab {
+padding: 8px 20px;
+border-radius: 7px;
+font-size: 13px;
+font-weight: 500;
+cursor: pointer;
+color: var(–text-muted);
+transition: all 0.2s;
+font-family: ‘DM Mono’, monospace;
+border: none;
+background: none;
+}
+
+.tab.active {
+background: var(–surface2);
+color: var(–accent);
+border: 1px solid var(–border);
+box-shadow: 0 0 12px rgba(0,229,255,0.1);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* CARDS */
+.card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 24px;
+position: relative;
+overflow: hidden;
+}
+
+.card::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 1px;
+background: linear-gradient(90deg, transparent, var(–accent), transparent);
+opacity: 0;
+transition: opacity 0.3s;
+}
+
+.card:hover::before { opacity: 1; }
+
+.card-title {
+font-family: ‘Syne’, sans-serif;
+font-size: 13px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 1.5px;
+color: var(–text-muted);
+margin-bottom: 16px;
+}
+
+/* GRID LAYOUTS */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* ARCHITECTURE DIAGRAM */
+.arch-diagram {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 32px;
+margin-bottom: 32px;
+}
+
+.arch-title {
+font-family: ‘Syne’, sans-serif;
+font-size: 18px;
+font-weight: 700;
+margin-bottom: 32px;
+color: var(–text);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.arch-title span {
+width: 6px; height: 6px;
+background: var(–accent);
+border-radius: 50%;
+box-shadow: 0 0 8px var(–accent);
+}
+
+/* FLOW DIAGRAM SVG AREA */
+.flow-svg-container {
+width: 100%;
+overflow-x: auto;
+}
+
+.flow-svg-container svg {
+min-width: 900px;
+width: 100%;
+}
+
+/* LAYER SYSTEM */
+.layers {
+display: flex;
+flex-direction: column;
+gap: 16px;
+margin-bottom: 32px;
+}
+
+.layer {
+border-radius: 12px;
+padding: 20px 24px;
+border: 1px solid;
+position: relative;
+}
+
+.layer-label {
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+text-transform: uppercase;
+letter-spacing: 2px;
+position: absolute;
+top: -10px;
+left: 20px;
+padding: 2px 10px;
+border-radius: 20px;
+font-weight: 500;
+}
+
+.layer-api { border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.04); }
+.layer-api .layer-label { background: rgba(0,229,255,0.15); color: var(–accent); border: 1px solid rgba(0,229,255,0.3); }
+
+.layer-engine { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.05); }
+.layer-engine .layer-label { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+
+.layer-eligibility { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.04); }
+.layer-eligibility .layer-label { background: rgba(16,185,129,0.12); color: var(–accent3); border: 1px solid rgba(16,185,129,0.3); }
+
+.layer-process { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.04); }
+.layer-process .layer-label { background: rgba(245,158,11,0.12); color: var(–accent4); border: 1px solid rgba(245,158,11,0.3); }
+
+.layer-observe { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.04); }
+.layer-observe .layer-label { background: rgba(239,68,68,0.12); color: var(–accent5); border: 1px solid rgba(239,68,68,0.3); }
+
+.layer-infra { border-color: rgba(90,114,144,0.3); background: rgba(30,45,69,0.3); }
+.layer-infra .layer-label { background: rgba(90,114,144,0.12); color: var(–text-muted); border: 1px solid rgba(90,114,144,0.3); }
+
+.layer-nodes {
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+padding-top: 8px;
+}
+
+.node {
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 10px 16px;
+font-size: 12px;
+font-family: ‘DM Mono’, monospace;
+color: var(–text-dim);
+display: flex;
+align-items: center;
+gap: 8px;
+transition: all 0.2s;
+cursor: pointer;
+}
+
+.node:hover { border-color: var(–accent); color: var(–text); transform: translateY(-1px); }
+
+.node-dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+flex-shrink: 0;
+}
+
+/* STATUS BADGES */
+.badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+padding: 4px 10px;
+border-radius: 20px;
+font-size: 11px;
+font-family: ‘DM Mono’, monospace;
+font-weight: 500;
+}
+
+.badge-success { background: rgba(16,185,129,0.12); color: var(–accent3); border: 1px solid rgba(16,185,129,0.25); }
+.badge-pending { background: rgba(245,158,11,0.12); color: var(–accent4); border: 1px solid rgba(245,158,11,0.25); }
+.badge-error { background: rgba(239,68,68,0.12); color: var(–accent5); border: 1px solid rgba(239,68,68,0.25); }
+.badge-running { background: rgba(0,229,255,0.12); color: var(–accent); border: 1px solid rgba(0,229,255,0.25); }
+.badge-skipped { background: rgba(90,114,144,0.12); color: var(–text-muted); border: 1px solid rgba(90,114,144,0.25); }
+
+.badge::before {
+content: ‘’;
+width: 5px; height: 5px;
+border-radius: 50%;
+background: currentColor;
+}
+
+.badge-running::before { animation: blink 1s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* WORKFLOW INSTANCE TABLE */
+.wf-table { width: 100%; border-collapse: collapse; }
+.wf-table th {
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+text-transform: uppercase;
+letter-spacing: 1.5px;
+color: var(–text-muted);
+text-align: left;
+padding: 10px 16px;
+border-bottom: 1px solid var(–border);
+}
+
+.wf-table td {
+padding: 12px 16px;
+font-size: 13px;
+border-bottom: 1px solid rgba(30,45,69,0.5);
+color: var(–text-dim);
+vertical-align: middle;
+}
+
+.wf-table tr:hover td { background: rgba(0,229,255,0.03); color: var(–text); }
+
+.wf-id { font-family: ‘DM Mono’, monospace; font-size: 11px; color: var(–accent); }
+
+/* METRIC CARDS */
+.metric-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 20px;
+position: relative;
+overflow: hidden;
+}
+
+.metric-card::after {
+content: ‘’;
+position: absolute;
+bottom: 0; left: 0; right: 0;
+height: 2px;
+background: var(–accent-color, var(–accent));
+opacity: 0.5;
+}
+
+.metric-value {
+font-family: ‘Syne’, sans-serif;
+font-size: 36px;
+font-weight: 800;
+line-height: 1;
+margin-bottom: 4px;
+}
+
+.metric-label {
+font-size: 12px;
+color: var(–text-muted);
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.5px;
+}
+
+.metric-delta {
+font-size: 11px;
+margin-top: 8px;
+color: var(–accent3);
+font-family: ‘DM Mono’, monospace;
+}
+
+/* ELIGIBILITY CHECKS */
+.check-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 16px 20px;
+display: flex;
+align-items: flex-start;
+gap: 14px;
+margin-bottom: 10px;
+transition: all 0.2s;
+cursor: pointer;
+}
+
+.check-card:hover { border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.02); }
+
+.check-icon {
+width: 36px; height: 36px;
+border-radius: 8px;
+display: flex; align-items: center; justify-content: center;
+font-size: 16px;
+flex-shrink: 0;
+}
+
+.check-info h4 {
+font-family: ‘Syne’, sans-serif;
+font-size: 14px;
+font-weight: 600;
+margin-bottom: 4px;
+}
+
+.check-info p {
+font-size: 12px;
+color: var(–text-muted);
+line-height: 1.5;
+}
+
+.check-tags {
+display: flex;
+gap: 6px;
+margin-top: 8px;
+flex-wrap: wrap;
+}
+
+.tag {
+font-size: 10px;
+font-family: ‘DM Mono’, monospace;
+padding: 2px 8px;
+border-radius: 4px;
+background: rgba(30,45,69,0.8);
+color: var(–text-muted);
+border: 1px solid var(–border);
+}
+
+/* CONFIG YAML */
+.code-block {
+background: #060a10;
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 20px;
+font-family: ‘DM Mono’, monospace;
+font-size: 12px;
+line-height: 1.7;
+overflow-x: auto;
+position: relative;
+}
+
+.code-block .line-num {
+color: #2a3d55;
+user-select: none;
+margin-right: 16px;
+display: inline-block;
+width: 20px;
+text-align: right;
+}
+
+.syn-key { color: #7dd3fc; }
+.syn-val { color: #86efac; }
+.syn-str { color: #fca5a5; }
+.syn-comment { color: #374f65; }
+.syn-type { color: #c084fc; }
+.syn-bool { color: var(–accent4); }
+
+/* TIMELINE */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before {
+content: ‘’;
+position: absolute;
+left: 7px; top: 0; bottom: 0;
+width: 1px;
+background: linear-gradient(to bottom, var(–accent), transparent);
+}
+
+.timeline-item {
+position: relative;
+margin-bottom: 20px;
+}
+
+.timeline-item::before {
+content: ‘’;
+position: absolute;
+left: -25px;
+top: 5px;
+width: 8px; height: 8px;
+border-radius: 50%;
+background: var(–dot-color, var(–accent));
+box-shadow: 0 0 8px var(–dot-color, var(–accent));
+}
+
+.timeline-time {
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+color: var(–text-muted);
+margin-bottom: 2px;
+}
+
+.timeline-event {
+font-size: 13px;
+color: var(–text);
+margin-bottom: 2px;
+}
+
+.timeline-detail {
+font-size: 11px;
+color: var(–text-muted);
+}
+
+/* PROCESS PIPELINE */
+.pipeline {
+display: flex;
+align-items: center;
+gap: 0;
+flex-wrap: wrap;
+margin: 16px 0;
+}
+
+.pipe-step {
+display: flex;
+align-items: center;
+gap: 0;
+}
+
+.pipe-node {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 8px 14px;
+font-size: 11px;
+font-family: ‘DM Mono’, monospace;
+color: var(–text-dim);
+text-align: center;
+min-width: 90px;
+transition: all 0.2s;
+}
+
+.pipe-node.active { border-color: var(–accent); color: var(–accent); background: rgba(0,229,255,0.05); }
+.pipe-node.done { border-color: var(–accent3); color: var(–accent3); background: rgba(16,185,129,0.05); }
+.pipe-node.error { border-color: var(–accent5); color: var(–accent5); background: rgba(239,68,68,0.05); }
+.pipe-node.async-node { border-style: dashed; }
+
+.pipe-arrow {
+color: var(–border);
+font-size: 18px;
+padding: 0 4px;
+font-family: monospace;
+}
+
+/* SECTION HEADING */
+.section-head {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 20px;
+}
+
+.section-title {
+font-family: ‘Syne’, sans-serif;
+font-size: 20px;
+font-weight: 700;
+}
+
+.section-sub {
+font-size: 13px;
+color: var(–text-muted);
+margin-top: 3px;
+}
+
+/* TOGGLE BUTTON */
+.btn {
+padding: 8px 16px;
+border-radius: 7px;
+font-size: 12px;
+font-family: ‘DM Mono’, monospace;
+cursor: pointer;
+transition: all 0.2s;
+border: 1px solid var(–border);
+background: var(–surface2);
+color: var(–text-dim);
+}
+
+.btn:hover { border-color: var(–accent); color: var(–accent); }
+.btn-primary { background: rgba(0,229,255,0.1); border-color: var(–accent); color: var(–accent); }
+.btn-primary:hover { background: rgba(0,229,255,0.2); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(–bg); }
+::-webkit-scrollbar-thumb { background: var(–border); border-radius: 3px; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+.grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* SPARKLINE */
+.sparkline-bar {
+display: flex;
+align-items: flex-end;
+gap: 2px;
+height: 32px;
+}
+
+.spark-col {
+flex: 1;
+border-radius: 2px 2px 0 0;
+opacity: 0.7;
+transition: opacity 0.2s;
+}
+
+.spark-col:hover { opacity: 1; }
+
+/* CONNECTOR LINES IN ARCH */
+.conn-line {
+display: flex;
+align-items: center;
+justify-content: center;
+height: 20px;
+color: var(–border);
+font-size: 20px;
+font-family: monospace;
+}
+
+.mb-24 { margin-bottom: 24px; }
+.mb-16 { margin-bottom: 16px; }
+.mt-24 { margin-top: 24px; }
+
+.chip {
+font-size: 10px;
+font-family: ‘DM Mono’, monospace;
+padding: 2px 8px;
+border-radius: 4px;
+letter-spacing: 0.5px;
+}
+
+.chip-cyan { background: rgba(0,229,255,0.1); color: var(–accent); border: 1px solid rgba(0,229,255,0.2); }
+.chip-purple { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.25); }
+.chip-green { background: rgba(16,185,129,0.1); color: var(–accent3); border: 1px solid rgba(16,185,129,0.2); }
+.chip-amber { background: rgba(245,158,11,0.1); color: var(–accent4); border: 1px solid rgba(245,158,11,0.2); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">⚡</div>
+      <h1>FlowForge</h1>
+    </div>
+    <div class="tagline">generic · pluggable · observable — workflow engine design</div>
+  </header>
+
+  <!-- TABS -->
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('architecture')">Architecture</button>
+    <button class="tab" onclick="switchTab('eligibility')">Eligibility Engine</button>
+    <button class="tab" onclick="switchTab('config')">Configuration</button>
+    <button class="tab" onclick="switchTab('observability')">Observability</button>
+    <button class="tab" onclick="switchTab('async')">Sync / Async</button>
+  </div>
+
+  <!-- ═══════════════════════════════════ ARCHITECTURE TAB -->
+
+  <div id="tab-architecture" class="tab-content active">
+
+```
+<div class="section-head">
+  <div>
+    <div class="section-title">System Architecture</div>
+    <div class="section-sub">Layered design — each layer is independently extensible</div>
+  </div>
+</div>
+
+<!-- LAYER DIAGRAM -->
+<div class="layers mb-24">
+
+  <div class="layer layer-api">
+    <div class="layer-label">Ingress Layer</div>
+    <div class="layer-nodes">
+      <div class="node"><div class="node-dot" style="background:#00e5ff"></div>REST API (Spring Boot)</div>
+      <div class="node"><div class="node-dot" style="background:#00e5ff"></div>POST /workflows/{type}/start</div>
+      <div class="node"><div class="node-dot" style="background:#00e5ff"></div>GET /workflows/{id}/status</div>
+      <div class="node"><div class="node-dot" style="background:#00e5ff"></div>POST /workflows/{id}/resume</div>
+    </div>
+  </div>
+
+  <div class="conn-line">↓</div>
+
+  <div class="layer layer-engine">
+    <div class="layer-label">Workflow Engine Core</div>
+    <div class="layer-nodes">
+      <div class="node"><div class="node-dot" style="background:#a78bfa"></div>Workflow Registry</div>
+      <div class="node"><div class="node-dot" style="background:#a78bfa"></div>Definition Loader</div>
+      <div class="node"><div class="node-dot" style="background:#a78bfa"></div>State Machine</div>
+      <div class="node"><div class="node-dot" style="background:#a78bfa"></div>Context Manager</div>
+      <div class="node"><div class="node-dot" style="background:#a78bfa"></div>Error & Retry Handler</div>
+      <div class="node"><div class="node-dot" style="background:#a78bfa"></div>Checkpoint Manager</div>
+    </div>
+  </div>
+
+  <div class="conn-line">↓</div>
+
+  <div class="layer layer-eligibility">
+    <div class="layer-label">Eligibility Layer</div>
+    <div class="layer-nodes">
+      <div class="node"><div class="node-dot" style="background:#10b981"></div>Check Executor</div>
+      <div class="node"><div class="node-dot" style="background:#10b981"></div>Rule Engine (JSON Rules)</div>
+      <div class="node"><div class="node-dot" style="background:#10b981"></div>Check Registry (plug-in)</div>
+      <div class="node"><div class="node-dot" style="background:#10b981"></div>External Validator</div>
+      <div class="node"><div class="node-dot" style="background:#10b981"></div>Result Aggregator</div>
+      <div class="node"><div class="node-dot" style="background:#10b981"></div>Override Engine</div>
+    </div>
+  </div>
+
+  <div class="conn-line">↓</div>
+
+  <div class="layer layer-process">
+    <div class="layer-label">Process Layer</div>
+    <div class="layer-nodes">
+      <div class="node"><div class="node-dot" style="background:#f59e0b"></div>Sync REST Executor</div>
+      <div class="node"><div class="node-dot" style="background:#f59e0b"></div>RabbitMQ Publisher</div>
+      <div class="node"><div class="node-dot" style="background:#f59e0b"></div>RabbitMQ Reply Consumer</div>
+      <div class="node"><div class="node-dot" style="background:#f59e0b"></div>Callback Resolver</div>
+      <div class="node"><div class="node-dot" style="background:#f59e0b"></div>Retry & Error Handler</div>
+    </div>
+  </div>
+
+  <div class="conn-line">↓</div>
+
+  <div class="layer layer-observe">
+    <div class="layer-label">Observability Layer</div>
+    <div class="layer-nodes">
+      <div class="node"><div class="node-dot" style="background:#ef4444"></div>Structured Event Logger</div>
+      <div class="node"><div class="node-dot" style="background:#ef4444"></div>Distributed Tracing (OTEL)</div>
+      <div class="node"><div class="node-dot" style="background:#ef4444"></div>Metrics Emitter</div>
+      <div class="node"><div class="node-dot" style="background:#ef4444"></div>Audit Trail</div>
+      <div class="node"><div class="node-dot" style="background:#ef4444"></div>Alerting Hooks</div>
+    </div>
+  </div>
+
+  <div class="conn-line">↓</div>
+
+  <div class="layer layer-infra">
+    <div class="layer-label">Infrastructure</div>
+    <div class="layer-nodes">
+      <div class="node"><div class="node-dot" style="background:#5a7290"></div>Workflow State DB (Postgres)</div>
+      <div class="node"><div class="node-dot" style="background:#5a7290"></div>RabbitMQ Broker</div>
+      <div class="node"><div class="node-dot" style="background:#5a7290"></div>Cache (Redis)</div>
+      <div class="node"><div class="node-dot" style="background:#5a7290"></div>Trace Store (Jaeger)</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- KEY DESIGN PRINCIPLES -->
+<div class="three-col">
+
+  <div class="card">
+    <div class="card-title">🧩 Dynamic Engine</div>
+    <p style="font-size:13px; color:var(--text-dim); line-height:1.7;">
+      Workflows are loaded from JSON/YAML definitions at runtime. No code deploy required for new workflow types. The engine reads a definition, resolves checks and steps, and executes them via the registry.
+    </p>
+    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;">
+      <span class="chip chip-cyan">Runtime Loading</span>
+      <span class="chip chip-purple">Hot Reload</span>
+      <span class="chip chip-green">Zero Deploy</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔌 Plug & Play Checks</div>
+    <p style="font-size:13px; color:var(--text-dim); line-height:1.7;">
+      Each eligibility check is a self-contained unit registered by key. Workflow definitions reference check keys — the engine resolves and runs them. Add new checks without touching existing code.
+    </p>
+    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;">
+      <span class="chip chip-green">Check Registry</span>
+      <span class="chip chip-amber">Composable</span>
+      <span class="chip chip-cyan">Ordered</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📡 Full Observability</div>
+    <p style="font-size:13px; color:var(--text-dim); line-height:1.7;">
+      Every state transition, check result, and process call emits structured events. OpenTelemetry spans trace end-to-end. Each workflow instance has a full audit trail queryable by ID.
+    </p>
+    <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;">
+      <span class="chip chip-cyan">OTEL</span>
+      <span class="chip chip-purple">Audit Trail</span>
+      <span class="chip chip-amber">Metrics</span>
+    </div>
+  </div>
+
+</div>
+```
+
+  </div>
+
+  <!-- ═══════════════════════════════════ ELIGIBILITY TAB -->
+
+  <div id="tab-eligibility" class="tab-content">
+
+```
+<div class="section-head">
+  <div>
+    <div class="section-title">Eligibility Engine</div>
+    <div class="section-sub">Generic, plug-and-play checks mapped per workflow type</div>
+  </div>
+  <button class="btn btn-primary">+ Register Check</button>
+</div>
+
+<div class="two-col mb-24">
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;">Available Check Registry</div>
+
+    <div class="check-card">
+      <div class="check-icon" style="background:rgba(0,229,255,0.1);">🪪</div>
+      <div class="check-info">
+        <h4>KYC_VERIFIED</h4>
+        <p>Validates customer KYC status against identity service. Fails if not verified or expired.</p>
+        <div class="check-tags">
+          <span class="tag">type: external_api</span>
+          <span class="tag">cacheable: true</span>
+          <span class="tag">ttl: 3600s</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-card">
+      <div class="check-icon" style="background:rgba(124,58,237,0.1);">💰</div>
+      <div class="check-info">
+        <h4>BALANCE_SUFFICIENT</h4>
+        <p>Checks account balance meets minimum threshold. Threshold is a configurable parameter.</p>
+        <div class="check-tags">
+          <span class="tag">type: rule</span>
+          <span class="tag">param: min_balance</span>
+          <span class="tag">async: false</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-card">
+      <div class="check-icon" style="background:rgba(16,185,129,0.1);">📊</div>
+      <div class="check-info">
+        <h4>CREDIT_SCORE_THRESHOLD</h4>
+        <p>Pulls credit score and evaluates against configurable band. Supports min/max range.</p>
+        <div class="check-tags">
+          <span class="tag">type: external_api</span>
+          <span class="tag">param: min_score</span>
+          <span class="tag">param: max_score</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-card">
+      <div class="check-icon" style="background:rgba(245,158,11,0.1);">🚫</div>
+      <div class="check-info">
+        <h4>SANCTIONS_CLEAR</h4>
+        <p>Screens entity against OFAC / sanctions lists. Hard fail — no override allowed.</p>
+        <div class="check-tags">
+          <span class="tag">type: external_api</span>
+          <span class="tag">override: false</span>
+          <span class="tag">hard_fail</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-card">
+      <div class="check-icon" style="background:rgba(239,68,68,0.1);">⚠️</div>
+      <div class="check-info">
+        <h4>RISK_SCORE_LOW</h4>
+        <p>Evaluates internal risk model output. Configurable threshold, supports soft override.</p>
+        <div class="check-tags">
+          <span class="tag">type: ml_model</span>
+          <span class="tag">override: true</span>
+          <span class="tag">param: threshold</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-card">
+      <div class="check-icon" style="background:rgba(90,114,144,0.1);">📋</div>
+      <div class="check-info">
+        <h4>DOCUMENT_COMPLETE</h4>
+        <p>Validates all required documents are present and unexpired for a given workflow type.</p>
+        <div class="check-tags">
+          <span class="tag">type: rule</span>
+          <span class="tag">param: required_docs[]</span>
+          <span class="tag">cacheable: false</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;">Check Mapping by Workflow Type</div>
+
+    <div class="card mb-16">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div style="font-family:'Syne',sans-serif; font-weight:600; font-size:14px;">LOAN_APPLICATION</div>
+        <span class="badge badge-running">active</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent3);">①</span> KYC_VERIFIED <span class="chip chip-green">required</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent3);">②</span> SANCTIONS_CLEAR <span class="chip chip-cyan">hard</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent3);">③</span> CREDIT_SCORE_THRESHOLD (min: 650)
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent3);">④</span> RISK_SCORE_LOW (threshold: 0.4)
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent3);">⑤</span> DOCUMENT_COMPLETE
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-16">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div style="font-family:'Syne',sans-serif; font-weight:600; font-size:14px;">ACCOUNT_OPENING</div>
+        <span class="badge badge-running">active</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent4);">①</span> KYC_VERIFIED <span class="chip chip-green">required</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent4);">②</span> SANCTIONS_CLEAR <span class="chip chip-cyan">hard</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:var(--accent4);">③</span> DOCUMENT_COMPLETE
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div style="font-family:'Syne',sans-serif; font-weight:600; font-size:14px;">WIRE_TRANSFER</div>
+        <span class="badge badge-running">active</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:#a78bfa;">①</span> BALANCE_SUFFICIENT (param: amount)
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:#a78bfa;">②</span> SANCTIONS_CLEAR <span class="chip chip-cyan">hard</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim);">
+          <span style="color:#a78bfa;">③</span> RISK_SCORE_LOW (threshold: 0.3)
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Execution model -->
+<div class="card">
+  <div class="card-title">Check Execution Model</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; font-size:13px;">
+    <div>
+      <div style="color:var(--accent); font-family:'DM Mono',monospace; font-size:11px; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Execution Modes</div>
+      <div style="color:var(--text-dim); line-height:1.8;">
+        · <strong style="color:var(--text)">Sequential</strong> — ordered, fail-fast<br>
+        · <strong style="color:var(--text)">Parallel</strong> — all checks concurrently<br>
+        · <strong style="color:var(--text)">Waterfall</strong> — stop on first failure<br>
+        · <strong style="color:var(--text)">Soft Fail</strong> — collect all results
+      </div>
+    </div>
+    <div>
+      <div style="color:var(--accent); font-family:'DM Mono',monospace; font-size:11px; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Override Policies</div>
+      <div style="color:var(--text-dim); line-height:1.8;">
+        · <strong style="color:var(--text)">HARD</strong> — never overridable<br>
+        · <strong style="color:var(--text)">SOFT</strong> — requires human approval<br>
+        · <strong style="color:var(--text)">AUTO</strong> — rule-based override ok<br>
+        · <strong style="color:var(--text)">SKIP</strong> — conditional skip allowed
+      </div>
+    </div>
+    <div>
+      <div style="color:var(--accent); font-family:'DM Mono',monospace; font-size:11px; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Result States</div>
+      <div style="color:var(--text-dim); line-height:1.8;">
+        · <span class="badge badge-success">PASS</span><br>
+        · <span class="badge badge-error">FAIL</span><br>
+        · <span class="badge badge-pending">PENDING_REVIEW</span><br>
+        · <span class="badge badge-skipped">SKIPPED</span>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ═══════════════════════════════════ CONFIG TAB -->
+
+  <div id="tab-config" class="tab-content">
+
+```
+<div class="section-head">
+  <div>
+    <div class="section-title">Workflow Configuration</div>
+    <div class="section-sub">YAML/JSON workflow definitions — no code required</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Workflow Definition — LOAN_APPLICATION</div>
+    <div class="code-block">
+```
+
+<span class="syn-comment"># workflow-loan-application.yaml</span>
+<span class="line-num">1</span><span class="syn-key">workflow</span>:
+<span class="line-num">2</span>  <span class="syn-key">id</span>: <span class="syn-str">LOAN_APPLICATION</span>
+<span class="line-num">3</span>  <span class="syn-key">version</span>: <span class="syn-str">“2.1.0”</span>
+<span class="line-num">4</span>  <span class="syn-key">description</span>: <span class="syn-str">Consumer loan application flow</span>
+
+<span class="line-num">6</span>  <span class="syn-key">eligibility</span>:
+<span class="line-num">7</span>    <span class="syn-key">mode</span>: <span class="syn-str">sequential</span>
+<span class="line-num">8</span>    <span class="syn-key">checks</span>:
+<span class="line-num">9</span>      - <span class="syn-key">check</span>: <span class="syn-str">KYC_VERIFIED</span>
+<span class="line-num">10</span>        <span class="syn-key">override</span>: <span class="syn-bool">false</span>
+<span class="line-num">11</span>      - <span class="syn-key">check</span>: <span class="syn-str">SANCTIONS_CLEAR</span>
+<span class="line-num">12</span>        <span class="syn-key">override</span>: <span class="syn-bool">false</span>
+<span class="line-num">13</span>        <span class="syn-key">policy</span>: <span class="syn-str">HARD</span>
+<span class="line-num">14</span>      - <span class="syn-key">check</span>: <span class="syn-str">CREDIT_SCORE_THRESHOLD</span>
+<span class="line-num">15</span>        <span class="syn-key">params</span>:
+<span class="line-num">16</span>          <span class="syn-key">min_score</span>: <span class="syn-val">650</span>
+<span class="line-num">17</span>          <span class="syn-key">max_score</span>: <span class="syn-val">850</span>
+<span class="line-num">18</span>      - <span class="syn-key">check</span>: <span class="syn-str">RISK_SCORE_LOW</span>
+<span class="line-num">19</span>        <span class="syn-key">params</span>:
+<span class="line-num">20</span>          <span class="syn-key">threshold</span>: <span class="syn-val">0.4</span>
+<span class="line-num">21</span>        <span class="syn-key">override</span>: <span class="syn-bool">true</span>
+<span class="line-num">22</span>        <span class="syn-key">policy</span>: <span class="syn-str">SOFT</span>
+
+<span class="line-num">24</span>  <span class="syn-key">processes</span>:
+<span class="line-num">25</span>    - <span class="syn-key">id</span>: <span class="syn-str">credit_bureau_pull</span>
+<span class="line-num">26</span>      <span class="syn-key">type</span>: <span class="syn-type">REST</span>
+<span class="line-num">27</span>      <span class="syn-key">endpoint</span>: <span class="syn-str">/api/credit/pull</span>
+<span class="line-num">28</span>      <span class="syn-key">method</span>: <span class="syn-str">POST</span>
+<span class="line-num">29</span>      <span class="syn-key">timeout_ms</span>: <span class="syn-val">5000</span>
+<span class="line-num">30</span>      <span class="syn-key">retry</span>:
+<span class="line-num">31</span>        <span class="syn-key">max_attempts</span>: <span class="syn-val">3</span>
+<span class="line-num">32</span>        <span class="syn-key">backoff</span>: <span class="syn-str">exponential</span>
+<span class="line-num">33</span>    - <span class="syn-key">id</span>: <span class="syn-str">risk_assessment</span>
+<span class="line-num">34</span>      <span class="syn-key">type</span>: <span class="syn-type">RABBITMQ</span>
+<span class="line-num">35</span>      <span class="syn-key">exchange</span>: <span class="syn-str">risk.exchange</span>
+<span class="line-num">36</span>      <span class="syn-key">routing_key</span>: <span class="syn-str">risk.assessment.request</span>
+<span class="line-num">37</span>      <span class="syn-key">reply_queue</span>: <span class="syn-str">risk.assessment.reply</span>
+<span class="line-num">38</span>      <span class="syn-key">timeout_ms</span>: <span class="syn-val">30000</span>
+<span class="line-num">39</span>      <span class="syn-key">mode</span>: <span class="syn-str">async</span>
+<span class="line-num">39</span>    - <span class="syn-key">id</span>: <span class="syn-str">decision_engine</span>
+<span class="line-num">40</span>      <span class="syn-key">type</span>: <span class="syn-type">REST</span>
+<span class="line-num">41</span>      <span class="syn-key">depends_on</span>:
+<span class="line-num">42</span>        - <span class="syn-str">credit_bureau_pull</span>
+<span class="line-num">43</span>        - <span class="syn-str">risk_assessment</span>
+<span class="line-num">44</span>      <span class="syn-key">endpoint</span>: <span class="syn-str">/api/decisions/evaluate</span>
+
+<span class="line-num">46</span>  <span class="syn-key">status_transitions</span>:
+<span class="line-num">47</span>    <span class="syn-key">initial</span>: <span class="syn-str">INITIATED</span>
+<span class="line-num">48</span>    <span class="syn-key">terminal</span>: [<span class="syn-str">APPROVED</span>, <span class="syn-str">REJECTED</span>, <span class="syn-str">CANCELLED</span>]
+<span class="line-num">49</span>    <span class="syn-key">transitions</span>:
+<span class="line-num">50</span>      <span class="syn-key">INITIATED</span> → [<span class="syn-str">CHECKING_ELIGIBILITY</span>]
+<span class="line-num">51</span>      <span class="syn-key">CHECKING_ELIGIBILITY</span> → [<span class="syn-str">ELIGIBLE</span>, <span class="syn-str">REJECTED</span>]
+<span class="line-num">52</span>      <span class="syn-key">ELIGIBLE</span> → [<span class="syn-str">PROCESSING</span>]
+<span class="line-num">53</span>      <span class="syn-key">PROCESSING</span> → [<span class="syn-str">APPROVED</span>, <span class="syn-str">REJECTED</span>]
+</div>
+</div>
+
+```
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Check Registration (Plugin Interface)</div>
+    <div class="code-block">
+```
+
+<span class="syn-comment">// TypeScript — check plugin interface</span>
+<span class="line-num">1</span><span class="syn-key">interface</span> <span class="syn-type">EligibilityCheck</span> {
+<span class="line-num">2</span>  <span class="syn-key">id</span>: <span class="syn-type">string</span>
+<span class="line-num">3</span>  <span class="syn-key">name</span>: <span class="syn-type">string</span>
+<span class="line-num">4</span>  <span class="syn-key">cacheable</span>: <span class="syn-type">boolean</span>
+<span class="line-num">5</span>  <span class="syn-key">execute</span>(
+<span class="line-num">6</span>    ctx: <span class="syn-type">WorkflowContext</span>,
+<span class="line-num">7</span>    params: <span class="syn-type">Record</span><<span class="syn-type">string</span>, <span class="syn-type">any</span>>
+<span class="line-num">8</span>  ): <span class="syn-type">Promise</span><<span class="syn-type">CheckResult</span>>
+<span class="line-num">9</span>}
+
+<span class="line-num">11</span><span class="syn-comment">// Implement a new check:</span>
+<span class="line-num">12</span><span class="syn-key">class</span> <span class="syn-type">AgeVerificationCheck</span>
+<span class="line-num">13</span>  <span class="syn-key">implements</span> <span class="syn-type">EligibilityCheck</span> {
+<span class="line-num">14</span>
+<span class="line-num">15</span>  <span class="syn-key">id</span> = <span class="syn-str">‘AGE_VERIFIED’</span>
+<span class="line-num">16</span>  <span class="syn-key">cacheable</span> = <span class="syn-bool">true</span>
+<span class="line-num">17</span>
+<span class="line-num">18</span>  <span class="syn-key">async</span> execute(ctx, params) {
+<span class="line-num">19</span>    <span class="syn-key">const</span> age = ctx.<span class="syn-key">entity</span>.age
+<span class="line-num">20</span>    <span class="syn-key">const</span> min = params.min_age ?? <span class="syn-val">18</span>
+<span class="line-num">21</span>    <span class="syn-key">return</span> age >= min
+<span class="line-num">22</span>      ? { status: <span class="syn-str">‘PASS’</span> }
+<span class="line-num">23</span>      : { status: <span class="syn-str">‘FAIL’</span>,
+<span class="line-num">24</span>          reason: <span class="syn-str">‘Age below minimum’</span> }
+<span class="line-num">25</span>  }
+<span class="line-num">26</span>}
+
+<span class="line-num">28</span><span class="syn-comment">// Register once at startup:</span>
+<span class="line-num">29</span>CheckRegistry.register(
+<span class="line-num">30</span>  <span class="syn-key">new</span> <span class="syn-type">AgeVerificationCheck</span>()
+<span class="line-num">31</span>)
+</div>
+
+```
+    <div style="margin-top:20px; font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">State Machine Transitions</div>
+    <div class="card">
+      <div style="display:flex; flex-direction:column; gap:8px; font-family:'DM Mono',monospace; font-size:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-skipped">INITIATED</span>
+          <span style="color:var(--border)">→</span>
+          <span class="badge badge-running">CHECKING_ELIGIBILITY</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding-left:20px;">
+          <span style="color:var(--border)">├─</span>
+          <span class="badge badge-success">ELIGIBLE</span>
+          <span style="color:var(--border)">→</span>
+          <span class="badge badge-running">PROCESSING</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding-left:20px;">
+          <span style="color:var(--border)">├─</span>
+          <span class="badge badge-pending">PENDING_REVIEW</span>
+          <span style="color:var(--text-muted); font-size:11px;">(soft fail)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding-left:20px;">
+          <span style="color:var(--border)">└─</span>
+          <span class="badge badge-error">REJECTED</span>
+          <span style="color:var(--text-muted); font-size:11px;">(hard fail)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding-left:40px;">
+          <span style="color:var(--border)">└─ PROCESSING →</span>
+          <span class="badge badge-success">APPROVED</span>
+          <span style="color:var(--border)">/</span>
+          <span class="badge badge-error">REJECTED</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ═══════════════════════════════════ OBSERVABILITY TAB -->
+
+  <div id="tab-observability" class="tab-content">
+
+```
+<div class="section-head">
+  <div>
+    <div class="section-title">Observability & Tracking</div>
+    <div class="section-sub">Full status tracking, tracing, metrics, and audit per workflow instance</div>
+  </div>
+</div>
+
+<!-- Metrics row -->
+<div class="grid-4 mb-24">
+  <div class="metric-card" style="--accent-color: var(--accent)">
+    <div class="metric-value" style="color:var(--accent)">2,841</div>
+    <div class="metric-label">Workflows Today</div>
+    <div class="metric-delta">↑ 12% vs yesterday</div>
+  </div>
+  <div class="metric-card" style="--accent-color: var(--accent3)">
+    <div class="metric-value" style="color:var(--accent3)">94.2%</div>
+    <div class="metric-label">Eligibility Pass Rate</div>
+    <div class="metric-delta">↑ 1.3% this week</div>
+  </div>
+  <div class="metric-card" style="--accent-color: var(--accent4)">
+    <div class="metric-value" style="color:var(--accent4)">847ms</div>
+    <div class="metric-label">Avg Completion Time</div>
+    <div class="metric-delta">↓ 23ms vs last hour</div>
+  </div>
+  <div class="metric-card" style="--accent-color: var(--accent5)">
+    <div class="metric-value" style="color:var(--accent5)">0.3%</div>
+    <div class="metric-label">Error Rate</div>
+    <div class="metric-delta">↓ within SLA</div>
+  </div>
+</div>
+
+<div class="two-col mb-24">
+
+  <!-- ACTIVE INSTANCES -->
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Live Workflow Instances</div>
+    <div class="card" style="padding:0;">
+      <table class="wf-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Step</th>
+            <th>Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="wf-id">wf-8823f</div></td>
+            <td style="font-size:12px;">LOAN_APP</td>
+            <td><span class="badge badge-running">PROCESSING</span></td>
+            <td style="font-size:11px; font-family:'DM Mono',monospace;">risk_assessment</td>
+            <td style="font-size:11px; color:var(--text-muted);">12s</td>
+          </tr>
+          <tr>
+            <td><div class="wf-id">wf-7741a</div></td>
+            <td style="font-size:12px;">WIRE_XFER</td>
+            <td><span class="badge badge-success">APPROVED</span></td>
+            <td style="font-size:11px; font-family:'DM Mono',monospace;">completed</td>
+            <td style="font-size:11px; color:var(--text-muted);">2m</td>
+          </tr>
+          <tr>
+            <td><div class="wf-id">wf-6619c</div></td>
+            <td style="font-size:12px;">ACCT_OPEN</td>
+            <td><span class="badge badge-pending">PENDING_REVIEW</span></td>
+            <td style="font-size:11px; font-family:'DM Mono',monospace;">RISK_SCORE_LOW</td>
+            <td style="font-size:11px; color:var(--text-muted);">8m</td>
+          </tr>
+          <tr>
+            <td><div class="wf-id">wf-5502d</div></td>
+            <td style="font-size:12px;">LOAN_APP</td>
+            <td><span class="badge badge-error">REJECTED</span></td>
+            <td style="font-size:11px; font-family:'DM Mono',monospace;">SANCTIONS_CLEAR</td>
+            <td style="font-size:11px; color:var(--text-muted);">15m</td>
+          </tr>
+          <tr>
+            <td><div class="wf-id">wf-4481e</div></td>
+            <td style="font-size:12px;">LOAN_APP</td>
+            <td><span class="badge badge-running">CHECKING_ELIG</span></td>
+            <td style="font-size:11px; font-family:'DM Mono',monospace;">CREDIT_SCORE</td>
+            <td style="font-size:11px; color:var(--text-muted);">3s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUDIT TIMELINE for wf-8823f -->
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Audit Trail — <span style="color:var(--accent)">wf-8823f</span></div>
+    <div class="card">
+      <div class="timeline">
+        <div class="timeline-item" style="--dot-color: var(--accent3)">
+          <div class="timeline-time">14:32:01.004</div>
+          <div class="timeline-event">Workflow Created</div>
+          <div class="timeline-detail">type=LOAN_APPLICATION, entity=cust-99124</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent)">
+          <div class="timeline-time">14:32:01.045</div>
+          <div class="timeline-event">Status → CHECKING_ELIGIBILITY</div>
+          <div class="timeline-detail">triggered by: initial transition</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent3)">
+          <div class="timeline-time">14:32:01.212</div>
+          <div class="timeline-event">Check PASS: KYC_VERIFIED</div>
+          <div class="timeline-detail">cached result, ttl_remaining=2847s</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent3)">
+          <div class="timeline-time">14:32:01.880</div>
+          <div class="timeline-event">Check PASS: SANCTIONS_CLEAR</div>
+          <div class="timeline-detail">external_api latency=634ms</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent3)">
+          <div class="timeline-time">14:32:03.140</div>
+          <div class="timeline-event">Check PASS: CREDIT_SCORE_THRESHOLD</div>
+          <div class="timeline-detail">score=712, min=650 ✓</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent3)">
+          <div class="timeline-time">14:32:03.501</div>
+          <div class="timeline-event">Status → ELIGIBLE</div>
+          <div class="timeline-detail">all checks passed</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent)">
+          <div class="timeline-time">14:32:03.502</div>
+          <div class="timeline-event">Status → PROCESSING</div>
+          <div class="timeline-detail">started: credit_bureau_pull (REST)</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent)">
+          <div class="timeline-time">14:32:04.890</div>
+          <div class="timeline-event">Process DONE: credit_bureau_pull</div>
+          <div class="timeline-detail">latency=1.3s, published to risk.exchange → risk.assessment.request</div>
+        </div>
+        <div class="timeline-item" style="--dot-color: var(--accent4)">
+          <div class="timeline-time">14:32:13.001</div>
+          <div class="timeline-event">Awaiting: risk_assessment (ASYNC)</div>
+          <div class="timeline-detail">waiting on RabbitMQ reply_queue: risk.assessment.reply</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OBSERVABILITY STACK -->
+<div class="card">
+  <div class="card-title">Observability Stack</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px;">
+    <div>
+      <div style="font-size:11px; color:var(--accent); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Logging</div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.8;">
+        Structured JSON events for every state transition, check execution, and process call. Includes trace_id, span_id, workflow_id.
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px; color:var(--accent3); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Tracing (OTEL)</div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.8;">
+        OpenTelemetry spans per workflow, per check, per process step. Full distributed trace across sync REST and async queue calls.
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px; color:var(--accent4); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Metrics</div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.8;">
+        Prometheus counters and histograms: throughput, eligibility pass/fail rate, step latency P50/P95/P99, queue depth.
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px; color:var(--accent5); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Alerting</div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.8;">
+        Configurable hooks per workflow type: SLA breach, high error rate, stuck workflows, async timeout exceeded.
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ═══════════════════════════════════ SYNC/ASYNC TAB -->
+
+  <div id="tab-async" class="tab-content">
+
+```
+<div class="section-head">
+  <div>
+    <div class="section-title">Sync &amp; Async Process Model</div>
+    <div class="section-sub">REST for sync operations · RabbitMQ for async operations</div>
+  </div>
+</div>
+
+<div class="two-col mb-24">
+
+  <div>
+    <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Sync — REST Process</div>
+    <div class="card mb-16">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div style="font-family:'Syne',sans-serif; font-size:14px; font-weight:600;">REST Executor</div>
+        <span class="chip chip-cyan">SYNC</span>
+      </div>
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-node done">Build Request</div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node done">HTTP Call</div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node active">Parse Response</div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node">Map to Context</div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.7; margin-top:12px;">
+        Blocks workflow execution until response. Supports timeout, retry with exponential backoff, circuit breaker. Response is mapped to workflow context for downstream steps.
+      </div>
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="chip chip-cyan">Timeout Config</span>
+        <span class="chip chip-green">Auto Retry</span>
+        <span class="chip chip-amber">Circuit Breaker</span>
+        <span class="chip chip-purple">Response Mapping</span>
+      </div>
+    </div>
+
+    <div class="code-block" style="font-size:11px;">
+```
+
+<span class="syn-key">processes</span>:
+
+- <span class="syn-key">id</span>: <span class="syn-str">fraud_check</span>
+  <span class="syn-key">type</span>: <span class="syn-type">REST</span>
+  <span class="syn-key">method</span>: <span class="syn-str">POST</span>
+  <span class="syn-key">endpoint</span>: <span class="syn-str">/api/fraud/evaluate</span>
+  <span class="syn-key">timeout_ms</span>: <span class="syn-val">3000</span>
+  <span class="syn-key">retry</span>:
+  <span class="syn-key">max_attempts</span>: <span class="syn-val">2</span>
+  <span class="syn-key">backoff</span>: <span class="syn-str">fixed_200ms</span>
+  <span class="syn-key">circuit_breaker</span>:
+  <span class="syn-key">threshold</span>: <span class="syn-val">0.5</span>
+  <span class="syn-key">window_ms</span>: <span class="syn-val">60000</span>
+  <span class="syn-key">response_map</span>:
+  <span class="syn-key">ctx.fraud_score</span>: <span class="syn-str">$.score</span>
+  <span class="syn-key">ctx.fraud_flags</span>: <span class="syn-str">$.flags</span>
+  </div>
+  
+    </div>
+  
+    <div>
+      <div style="font-size:12px; color:var(--text-muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Async — RabbitMQ Process</div>
+      <div class="card mb-16">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-family:'Syne',sans-serif; font-size:14px; font-weight:600;">RabbitMQ Executor</div>
+          <span class="chip chip-amber">ASYNC</span>
+        </div>
+        <div class="pipeline" style="flex-wrap:wrap; gap:4px;">
+          <div class="pipe-step">
+            <div class="pipe-node done async-node">Publish to Exchange</div>
+            <div class="pipe-arrow">→</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-node active async-node">Suspend WF</div>
+            <div class="pipe-arrow">→</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-node async-node">Await Reply Queue</div>
+            <div class="pipe-arrow">→</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-node async-node">Resume WF</div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--text-dim); line-height:1.7; margin-top:12px;">
+          Publishes message to a RabbitMQ exchange, checkpoints workflow state, and suspends. A dedicated reply consumer listens on the reply queue and resumes the workflow when the response arrives, matched by correlation ID.
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="chip chip-amber">Checkpoint State</span>
+          <span class="chip chip-cyan">Reply Consumer</span>
+          <span class="chip chip-green">Timeout Fallback</span>
+          <span class="chip chip-purple">Correlation ID</span>
+        </div>
+      </div>
+  
+  ```
+  <div class="code-block" style="font-size:11px;">
+  ```
+
+<span class="syn-key">processes</span>:
+
+- <span class="syn-key">id</span>: <span class="syn-str">underwriting_decision</span>
+  <span class="syn-key">type</span>: <span class="syn-type">RABBITMQ</span>
+  <span class="syn-key">exchange</span>: <span class="syn-str">underwriting.exchange</span>
+  <span class="syn-key">routing_key</span>: <span class="syn-str">underwriting.request</span>
+  <span class="syn-key">reply_queue</span>: <span class="syn-str">underwriting.reply</span>
+  <span class="syn-key">correlation_key</span>: <span class="syn-str">workflow_id</span>
+  <span class="syn-key">timeout_ms</span>: <span class="syn-val">120000</span>
+  <span class="syn-key">on_timeout</span>:
+  <span class="syn-key">action</span>: <span class="syn-str">SUSPEND</span>
+  <span class="syn-key">notify</span>: <span class="syn-str">ops-team</span>
+  <span class="syn-key">payload_map</span>:
+  <span class="syn-key">customer_id</span>: <span class="syn-str">ctx.entity.id</span>
+  <span class="syn-key">loan_amount</span>: <span class="syn-str">ctx.request.amount</span>
+  <span class="syn-key">credit_score</span>: <span class="syn-str">ctx.credit_score</span>
+  </div>
+  
+    </div>
+  
+  </div>
+  
+  <!-- Mixed pipeline example -->
+  
+  <div class="card">
+    <div class="card-title">Mixed Sync + Async Pipeline — LOAN_APPLICATION</div>
+    <div style="overflow-x:auto; padding: 8px 0;">
+      <div class="pipeline" style="gap:0; min-width:800px;">
+        <div class="pipe-step">
+          <div class="pipe-node done" style="min-width:100px; text-align:center;">
+            <div style="font-size:9px; color:var(--text-muted); margin-bottom:2px;">ELIGIBILITY</div>
+            All Checks Pass
+          </div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node done" style="min-width:110px; text-align:center; border-color:var(--accent3)">
+            <div style="font-size:9px; color:var(--accent3); margin-bottom:2px;">SYNC · REST</div>
+            Credit Bureau
+          </div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node active" style="min-width:120px; text-align:center; border-color:var(--accent4); border-style:dashed;">
+            <div style="font-size:9px; color:var(--accent4); margin-bottom:2px;">ASYNC · RABBITMQ</div>
+            Risk Assessment
+          </div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node" style="min-width:120px; text-align:center; border-color:var(--accent4); border-style:dashed;">
+            <div style="font-size:9px; color:var(--accent4); margin-bottom:2px;">ASYNC · RABBITMQ</div>
+            Underwriting
+          </div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node" style="min-width:110px; text-align:center; border-color:var(--accent3)">
+            <div style="font-size:9px; color:var(--accent3); margin-bottom:2px;">SYNC · REST</div>
+            Decision Engine
+          </div>
+          <div class="pipe-arrow">→</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-node" style="min-width:100px; text-align:center; border-color:var(--accent2)">
+            <div style="font-size:9px; color:#a78bfa; margin-bottom:2px;">TERMINAL</div>
+            APPROVED / REJECTED
+          </div>
+        </div>
+      </div>
+    </div>
+      <div style="display:flex; gap:16px; margin-top:14px; font-size:11px; font-family:'DM Mono',monospace; color:var(--text-muted);">
+      <div style="display:flex; align-items:center; gap:6px;"><div style="width:12px; height:1px; background:var(--accent3); border-top:2px solid var(--accent3)"></div> Solid border = REST (sync, blocking)</div>
+      <div style="display:flex; align-items:center; gap:6px;"><div style="width:12px; height:0; border-top:2px dashed var(--accent4)"></div> Dashed border = RabbitMQ (async, non-blocking)</div>
+      <div style="display:flex; align-items:center; gap:6px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent)"></div> Blue = currently executing</div>
+    </div>
+  </div>
+
+  </div>
+
+  <div style="height: 48px;"></div>
+</div>
+
+<script>
+  function switchTab(id) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      const ids = ['architecture','eligibility','config','observability','async'];
+      t.classList.toggle('active', ids[i] === id);
+    });
+    document.querySelectorAll('.tab-content').forEach(tc => {
+      tc.classList.toggle('active', tc.id === 'tab-' + id);
+    });
+  }
+</script>
+
+</body>
+</html>
